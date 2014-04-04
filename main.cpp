@@ -1,25 +1,35 @@
 #include <iostream>
 
-class Path {
-public:
-	constexpr Path(const char* path) {
-	}
-	Path(const std::string& path) {
-	}
-private:
-	void parseSimple() {
-	}
-};
-
 #define TEST_ENABLED
 
-int main() {
+class SmartJsonValue {};
+
+class TestAdapter : public ParserAdapter<SmartJsonValue> 
+{
+public:
+	virtual SmartJsonValue* getChild(SmartJsonValue* value, const std::string& name) 
+	{
+		std::cout << "GetChild(s): " << name << std::endl;
+		return nullptr;
+	}
+	virtual SmartJsonValue* getChild(SmartJsonValue* value, int index) 
+	{
+		std::cout << "GetChild(i): " << index << std::endl;
+		return nullptr;	}
+};
+
+int main() 
+{
 #ifdef TEST_ENABLED
-	Path("a.b.c.d");
-	Path("a.b[5].c.d");
-	Path("[2]");
-	Path("[2].a");
-	Path("[2].a");
+	TestAdapter adapter;
+
+	using MyPath = Path<SmartJsonValue>;
+
+	MyPath(adapter, "a.b.c.d");
+	MyPath(adapter, "a.b[5].c.d");
+	MyPath(adapter, "[2]");
+	MyPath(adapter, "[2].a");
+	MyPath(adapter, "[2].a");
 #endif
 
 	/*
