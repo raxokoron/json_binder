@@ -1,49 +1,49 @@
 #pragma once
 
-#include <deque>
+#include <vector>
 #include <string>
 
-#include "ParserAdapter.h"
-#include "Common.h"
-
-struct PathNode 
-{
-	bool isObjectChild;
-	union 
-	{
-		const char* name;
-		unsigned int index;
-	} data;
-};
-
-template<typename JsonValue>
-class Path 
+class Path
 {
 public:
-	Path(ParserAdapter<JsonValue>& adapter, const std::string& path) : 
-		adapter_(adapter), path_(path) 
+	enum class Type
 	{
-		ASSERT(path_.length() > 0);
-		nodes_ = parse(path_);
-	}
+		index,
+		name
+	};
 
-	Path(Path&& other) = default;
-	Path& operator=(Path&& other) = default;
+	struct Node
+	{
+		Node(const char* name) : mType(Type::name)
+		{
+			mData.mName = name;
+		}
+		Node(unsigned int index) : mType(Type::index)
+		{
+			mData.mIndex = index;
+		}
 	
-	Path(const Path& other) = delete;
-	Path& operator=(const Path& other) = delete;
-
-	JsonValue* getChild(JsonValue* value, int index) 
-	{
-		auto& node = nodes_[index];
-		if(node.isObjectChild)
-			return adapter_.getChild(value, node.data.name);
-		return adapter_.getChild(value, node.data.index);
-	}
+		Type mType;
+		union {
+			const char* mName;
+			unsigned int mIndex;
+		} mData;
+	};
+	
+	Path(std::string path);
+	Path(const char* path) : Path(std::string(path)) {}
+	
+	bool hasFailed() { return mHasFailed; }
+	
+	const std::string& getPath() { return mPath; }
+	const std::vector<Node>& getNodes() { return mNodes; }
+	
+	bool operator<(const Path& other) { return mPath < other.mPath; }
 private:
-	std::string path_;
-	std::deque<PathNode> nodes_;
-	ParserAdapter<JsonValue>& adapter_;
-};
+	bool parse();
 
-std::deque<Path::PathNode> parse(const std::string& path);
+	const std::string mPath;
+	std::string mBuffer;
+	bool mHasFailed;
+	std::vector<Node> mNodes;
+};

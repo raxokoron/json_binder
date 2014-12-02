@@ -1,58 +1,145 @@
 #include "Path.h"
 
 #include <cctype>
+#include <cstring>
+#include "pow10.h"
 
-const char* skipSpaces(const char* str) 
+namespace
 {
-	for(;std::isspace(*str);++str);
-	return str;
-}
-
-unsigned int simpleAtoi(const char *p) 
-{
-	unsigned int x = 0;
-	while (*p != '\0') 
+	inline bool isDelimChar(const char* c)
 	{
-		x = (x*10) + (*p - '0');
-		++p;
-	}
-	return x;
-}
-
-const char* parseArray(const char* data, PathNode& node)
-{
-	ASSERT(*data == '[');
-	++data;
-	data = skipSpaces(data);
-	const char* start = data;
-	for(; isdigit(*data); ++data);
-	ASSERT((*data == ']') || std::isspace(*data));
-	ASSERT(data - start > 0);
-
-	node.isObjectChild = false;
-	char tmp = *data;
-	*data = '\0';
-	node.data.index = simpleAtoi(start);
-	*data = tmp;
-	return data;
-}
-
-std::deque<PathNode> parse(const std::string& path);
-{
-	std::deque<PathNode> data;
-
-	const char* data = path.c_str();
-
-	while(*data != '\0')
-	{
-		ASSERT(*data != '.');
-		if(*data == '[')
-		{
-		}
-		else
-		{
-		}
+		return (*c == '.') || (*c == '[');
 	}
 
+	inline bool isControlChar(const char* c)
+	{
+		return isDelimChar(c) || (*c == ']') || (*c == '\\');
+	}
+
+	char* parseName(char* start)
+	{
+		char* c = start;
+		char* cw = c;
+		while(!isDelimChar(c) && (*c != '\0'))
+		{
+			if(*c == '\\')
+			{
+				++c;
+				if(!isControlChar(c))
+					return nullptr;
+			}
+			else if(*c == ']')
+			{
+				return nullptr;
+			}
+			*cw = *c;
+			++c;
+			++cw;
+		}
+		if(c == start)
+			return nullptr;
+		memset(cw, '\0', c - cw);
+		return c;
+	}
+
+	char* parseArrayIndex(char* c, unsigned int& index)
+	{
+		++c;
+		const char* aNumStart = nullptr;
+		const char* aNumEnd = nullptr;
+		while(*c != ']')
+		{
+			if(std::isdigit(*c))
+			{
+				if(aNumStart == nullptr)
+				{
+					aNumStart = c;
+				}
+				else if(aNumEnd != nullptr)
+				{
+					return nullptr;
+				}
+			}
+			else if(std::isspace(*c))
+			{
+				if(aNumStart != nullptr)
+					aNumEnd = c;
+			}
+			else
+			{
+				return nullptr;
+			};
+			++c;
+		}
+		
+		if(aNumStart == nullptr)
+			return nullptr;
+		
+		if(aNumEnd == nullptr)
+			aNumEnd = c;
+		
+		index = 0;
+		for(;aNumStart != aNumEnd; ++aNumStart)
+		{
+			index += (*aNumStart - '0') * pow10<unsigned int>(aNumEnd - aNumStart - 1);
+		}
+		++c;
+		return c;
+	}
+}
+
+
+Path::Path(std::string path) : mPath(std::move(path)), mHasFailed(true)
+{
+	if(!mPath.empty() && (mPath[0] != '.'))
+	{
+		mBuffer = (mPath[0] == '[') ? mPath : '.' + mPath;
+		mHasFailed = !parse();
+		if(mHasFailed)
+		{
+			mBuffer.clear();
+			mNodes.clear();
+		}
+	}
+}
+
+/*
+expr = <name_index> [<expr_left>] 
+name_index = <index> | <name>
+index = '[' <spaces> <number> <spaces> ']'
+expr_left = '.'<name>[<expr_left>] | <index>[<expr_left>]
+name = ...
+number = '[0-9]+'
+*/
+bool Path::parse()
+{
+	char* c = &mBuffer[0];
+	while(*c != '\0')
+	{
+		if(*c == '.')
+		{
+			*c = '\0';
+			++c;
+			char* cn = parseName(c);
+			if(cn == nullptr)
+				return false;
+			mNodes.emplace_back(static_cast<const char*>(c));
+			c = cn;
+		}
+		else if(*c == '[')
+		{
+			unsigned int aIndex = 0;
+			char* cn = parseArrayIndex(c, aIndex);
+			if(cn == nullptr)
+				return false;
+			*c = '\0';
+			c = cn;
+			mNodes.emplace_back(aIndex);
+		}
+		else 
+		{
+			return false;
+		}
+	}
 	return true;
 }
