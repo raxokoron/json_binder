@@ -39,14 +39,12 @@ public:
 	
 	bool init(std::string path);
 	
-	const std::string& getPath() { return mPath; }
-	const std::vector<Node>& getNodes() { return mNodes; }
+	const std::string& getPath()  const{ return mPath; }
+	const std::vector<Node>& getNodes() const { return mNodes; }
 	
-	bool operator==(const Path& other) { return mPath == other.mPath; }
-	bool operator<(const Path& other) { return mPath < other.mPath; }
+	bool operator==(const Path& other) const { return mPath == other.mPath; }
+	bool operator<(const Path& other) const { return mPath < other.mPath; }
 private:
-	bool parse();
-
 	std::string mPath;
 	std::string mBuffer;
 	std::vector<Node> mNodes;

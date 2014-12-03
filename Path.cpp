@@ -86,6 +86,47 @@ namespace
 		++c;
 		return c;
 	}
+	
+	/*
+expr = <name_index> [<expr_left>] 
+name_index = <index> | <name>
+index = '[' <spaces> <number> <spaces> ']'
+expr_left = '.'<name>[<expr_left>] | <index>[<expr_left>]
+name = ...
+number = '[0-9]+'
+*/
+	bool parse(std::string& buffer, std::vector<Path::Node>& nodes)
+	{
+		char* c = &buffer[0];
+		while(*c != '\0')
+		{
+			if(*c == '.')
+			{
+				*c = '\0';
+				++c;
+				char* cn = parseName(c);
+				if(cn == nullptr)
+					return false;
+				nodes.emplace_back(static_cast<const char*>(c));
+				c = cn;
+			}
+			else if(*c == '[')
+			{
+				unsigned int aIndex = 0;
+				char* cn = parseArrayIndex(c, aIndex);
+				if(cn == nullptr)
+					return false;
+				*c = '\0';
+				c = cn;
+				nodes.emplace_back(aIndex);
+			}
+			else 
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 }
 
 bool Path::init(std::string path)
@@ -95,7 +136,7 @@ bool Path::init(std::string path)
 
 	mPath = std::move(path);
 	mBuffer = (mPath[0] == '[') ? mPath : '.' + mPath;
-	bool aResult = parse();
+	bool aResult = parse(mBuffer, mNodes);
 	if(!aResult)
 	{
 		mPath.clear();
@@ -103,45 +144,4 @@ bool Path::init(std::string path)
 		mNodes.clear();
 	}
 	return aResult;
-}
-
-/*
-expr = <name_index> [<expr_left>] 
-name_index = <index> | <name>
-index = '[' <spaces> <number> <spaces> ']'
-expr_left = '.'<name>[<expr_left>] | <index>[<expr_left>]
-name = ...
-number = '[0-9]+'
-*/
-bool Path::parse()
-{
-	char* c = &mBuffer[0];
-	while(*c != '\0')
-	{
-		if(*c == '.')
-		{
-			*c = '\0';
-			++c;
-			char* cn = parseName(c);
-			if(cn == nullptr)
-				return false;
-			mNodes.emplace_back(static_cast<const char*>(c));
-			c = cn;
-		}
-		else if(*c == '[')
-		{
-			unsigned int aIndex = 0;
-			char* cn = parseArrayIndex(c, aIndex);
-			if(cn == nullptr)
-				return false;
-			*c = '\0';
-			c = cn;
-			mNodes.emplace_back(aIndex);
-		}
-		else 
-		{
-			return false;
-		}
-	}
-	return true;
 }
