@@ -28,6 +28,8 @@ public:
 			const char* mName;
 			unsigned int mIndex;
 		} mData;
+		
+		bool operator==(const Node& other) const;
 	};
 	
 	Path() = default;

@@ -129,6 +129,24 @@ number = '[0-9]+'
 	}
 }
 
+bool Path::Node::operator==(const Node& other) const
+{
+	bool aResult = false;
+	if(mType != other.mType)
+	{
+		switch(mType)
+		{
+		case Type::index:
+			aResult = (mData.mIndex == other.mData.mIndex);
+			break;
+		case Type::name:
+			aResult = strcmp(mData.mName, other.mData.mName);
+			break;
+		};
+	}
+	return aResult;
+}
+
 bool Path::init(std::string path)
 {
 	if(path.empty() || (path[0] == '.'))
