@@ -7,7 +7,8 @@ bool testPathSet(const std::set<std::string>& set, bool result)
 {
 	for(auto it = set.begin(); it != set.end(); ++it)
 	{
-		if(Path(*it).hasFailed() == result)
+		Path p;
+		if(p.init(*it) != result)
 		{
 			std::cout << "Test failed at: " << *it << std::endl;
 			return false;

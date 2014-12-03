@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-class Path
+class Path final
 {
 public:
 	enum class Type
@@ -30,10 +30,14 @@ public:
 		} mData;
 	};
 	
-	Path(std::string path);
-	Path(const char* path) : Path(std::string(path)) {}
+	Path() = default;
+	Path(const Path&) = default;
+	Path(Path&&) = default;
 	
-	bool hasFailed() { return mHasFailed; }
+	Path& operator=(const Path&) = default;
+	Path& operator=(Path&&) = default;
+	
+	bool init(std::string path);
 	
 	const std::string& getPath() { return mPath; }
 	const std::vector<Node>& getNodes() { return mNodes; }
@@ -42,8 +46,7 @@ public:
 private:
 	bool parse();
 
-	const std::string mPath;
+	std::string mPath;
 	std::string mBuffer;
-	bool mHasFailed;
 	std::vector<Node> mNodes;
 };

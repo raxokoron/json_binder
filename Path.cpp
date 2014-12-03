@@ -88,19 +88,21 @@ namespace
 	}
 }
 
-
-Path::Path(std::string path) : mPath(std::move(path)), mHasFailed(true)
+bool Path::init(std::string path)
 {
-	if(!mPath.empty() && (mPath[0] != '.'))
+	if(path.empty() || (path[0] == '.'))
+		return false;
+
+	mPath = std::move(path);
+	mBuffer = (mPath[0] == '[') ? mPath : '.' + mPath;
+	bool aResult = parse();
+	if(!aResult)
 	{
-		mBuffer = (mPath[0] == '[') ? mPath : '.' + mPath;
-		mHasFailed = !parse();
-		if(mHasFailed)
-		{
-			mBuffer.clear();
-			mNodes.clear();
-		}
+		mPath.clear();
+		mBuffer.clear();
+		mNodes.clear();
 	}
+	return aResult;
 }
 
 /*
