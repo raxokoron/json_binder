@@ -42,6 +42,7 @@ public:
 	const std::string& getPath() { return mPath; }
 	const std::vector<Node>& getNodes() { return mNodes; }
 	
+	bool operator==(const Path& other) { return mPath == other.mPath; }
 	bool operator<(const Path& other) { return mPath < other.mPath; }
 private:
 	bool parse();
