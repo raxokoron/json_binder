@@ -1,55 +1,112 @@
 #include <iostream>
+#include <string>
+#include "Assert.h"
 
-#define TEST_ENABLED
+#include "JsonParser.h"
+#include "RapidJsonProcessor.h"
 
-class SmartJsonValue {};
-
-class TestAdapter : public ParserAdapter<SmartJsonValue> 
+template<typename DataT>
+struct Test
 {
-public:
-	virtual SmartJsonValue* getChild(SmartJsonValue* value, const std::string& name) 
-	{
-		std::cout << "GetChild(s): " << name << std::endl;
-		return nullptr;
-	}
-	virtual SmartJsonValue* getChild(SmartJsonValue* value, int index) 
-	{
-		std::cout << "GetChild(i): " << index << std::endl;
-		return nullptr;	}
+	std::string json;
+	std::function<void(JsonParser<RapidJsonProcessor, DataT>&)> bindings;
+	DataT etalon;
 };
+
+template<typename DataT>
+bool test(const Test<DataT>& t)
+{
+	ASSERT(!t.json.empty());
+	ASSERT(t.bindings);
+
+	JsonParser<RapidJsonProcessor, DataT> parser;
+	t.bindings(parser);
+	
+	DataT userData;
+	ResultCode code = parser.parse(t.json, userData);
+	if(code != ResultCode::ok)
+	{
+		std::cout << "Errrr (" << getResultDescription(code) << "): " << parser.getErrorDescription();
+		return false;
+	}
+	
+	return userData == t.etalon;
+}
+
+struct BinderTest0
+{
+	struct User
+	{
+		int index;
+		std::string name;
+		std::string first_name;
+		std::string last_name;
+		unsigned int age;
+		std::string gender;
+		
+		bool operator==(const User& other)
+		{
+			return (index == other.index) 
+				&& (name == other.name)
+				&& (first_name == other.first_name)
+				&& (last_name == other.last_name)
+				&& (age == other.age)
+				&& (gender == other.gender);
+		}
+	};
+	static Test<User> create()
+	{
+		Test<User> t;
+		t.json = 
+		R"({"Users" : [
+			{
+				"index" : 0,
+				"name" : {
+					"first name" : "Jin",
+					"last name" : "Kisaragi"
+				},
+				"age" : 21,
+				"gender" : "male"
+			}
+		]})";
+		t.bindings = [](JsonParser<RapidJsonProcessor, User>& parser){
+			parser.bind("Users[0].index", &User::index, true);
+			parser.bind("Users[0].name.first name", &User::name, false);
+			parser.bind("Users[0].name.first name", &User::first_name, true);
+			parser.bind("Users[0].name.last name", &User::last_name, true);
+			parser.bind("Users[0].age", &User::age, true);
+			parser.bind("Users[0].gender", &User::gender, true);
+		};
+		t.etalon.index = 0;
+		t.etalon.name = "Jin";
+		t.etalon.first_name = "Jin";
+		t.etalon.last_name = "Kisaragi";
+		t.etalon.age = 21;
+		t.etalon.gender = "male";
+		return std::move(t);
+	}
+};
+
+
+/*
+Plan:
+1) Custom errors
+2) Conditions
+3) Custom setters
+4) Binder bindings
+5) Error descriptions
+6) map<std::string, T> binding for objects;
+7) std::vector<T>, std::deque<T>, std::list<T> bindings for arrays;
+8) Path tree builder;
+9) Builder and parser classes;
+*/
+
+#include <iostream>
+#define CHECK(tst) { if(!(tst)) { std::cout << "Test failed: " << #tst << std::endl; }}
 
 int main() 
 {
-#ifdef TEST_ENABLED
-	TestAdapter adapter;
-
-	using MyPath = Path<SmartJsonValue>;
-
-	MyPath(adapter, "a.b.c.d");
-	MyPath(adapter, "a.b[5].c.d");
-	MyPath(adapter, "[2]");
-	MyPath(adapter, "[2].a");
-	MyPath(adapter, "[2].a");
-#endif
-
-	/*
-	struct A {
-		int a;
-	};
-
-
-	json_binder binder;
-	binder.bind("a.b.c.d", &A::a, true, MySmartError());
-	binder.bind("a.b.c.d", &A::a, (Exists("a.b.c.e") == 5),  MySmartError());
-
-	...
-	
-	A a;
-	const char* jsonData;
-	Error err = binder.parse(jsonData, a);
-
-	std::cout << a.a << std::endl;
-	*/
+	CHECK(test(BinderTest0::create()));
 
 	return 0;
 }

@@ -1,0 +1,29 @@
+/*
+#include "NodeTypes.h"
+class JsonProcessor
+{
+public:
+	using JsonNode = SomeNode;
+	
+	// Takes json as std::string and return pointer to root node.
+	// If parse error occurs returns nullptr and write error description to errorDescription;
+	static std::unique_ptr<JsonNode> parse(const std::string& json, std::string& errorDescription);
+	
+	static NodeType getType(JsonNode* node);
+	
+	// Return object or array size;
+	static unsigned int size(JsonNode* node);
+	
+	// Return pointer to JsonNode if exists and nullptr otherwise. 
+	// If error occurs write ResultCode to code;
+	static JsonNode* getChild(JsonNode* node, unsigned int i, ResultCode& code);
+	static JsonNode* getChild(JsonNode* node, const char* name, ResultCode& code);
+	
+	// Converts JsonNode to specific value and returns true on success and false on error.
+	static bool getValue(JsonNode* node, bool& value);
+	static bool getValue(JsonNode* node, int64_t& value);
+	static bool getValue(JsonNode* node, uint64_t& value);
+	static bool getValue(JsonNode* node, double& value);
+	static bool getValue(JsonNode* node, std::string& value)
+};
+*/
